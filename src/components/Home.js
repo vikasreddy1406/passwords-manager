@@ -3,6 +3,7 @@ import { FaEdit, FaTrashAlt, FaRegCopy, FaCopy } from "react-icons/fa";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
 export default function Home() {
 
@@ -17,12 +18,24 @@ export default function Home() {
     }, [editingItem]);
 
 
-    useEffect(() => {
-        const passData = localStorage.getItem('passData');
-        if (passData) {
-            setData(JSON.parse(passData));
+    const fetchData = async () => {
+        try {
+            const response = await axios.get('http://localhost:8000/api/passwords');
+            // console.log(response.data);
+            setData(response.data);
+        } catch (error) {
+            console.error('Error fetching data:', error.message);
         }
-    }, [])
+    };
+
+    useEffect(() => {
+        // const passData = localStorage.getItem('passData');
+        // if (passData) {
+        //     setData(JSON.parse(passData));
+        // }
+
+        fetchData();
+    }, [setData])
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value })
@@ -34,6 +47,10 @@ export default function Home() {
         if (!form.id) {
             form.id = uuidv4();
             updatedData = [...data, form];
+            const addPassword = async () => {
+                await axios.post('http://localhost:8000/api/passwords/add', form);
+            }
+            addPassword();
             toast.success('Password added successfully', {
                 position: "top-right",
                 autoClose: 2000,
@@ -46,6 +63,11 @@ export default function Home() {
             });
         } else {
             updatedData = data.map((item) => (item.id === form.id ? form : item));
+            const updatePassword = async () => {
+                await axios.put('http://localhost:8000/api/passwords/update', form)
+            }
+            updatePassword();
+            // fetchData();
             toast.success('Password updated successfully', {
                 position: "top-right",
                 autoClose: 2000,
@@ -58,7 +80,7 @@ export default function Home() {
             });
         }
         setData(updatedData);
-        localStorage.setItem("passData", JSON.stringify(updatedData));
+        // localStorage.setItem("passData", JSON.stringify(updatedData));
         setForm({ website: "", username: "", password: "", id: "" });
         setEditingItem(null);
     }
@@ -88,6 +110,10 @@ export default function Home() {
 
     const handleDelete = (id) => {
         const updatedData = data.filter((item) => item.id !== id);
+        const deletePassword = async () => {
+            axios.delete(`http://localhost:8000/api/passwords/delete/${id}`)
+        }
+        deletePassword();
         toast.success('Password deleted successfully', {
             position: "top-right",
             autoClose: 2000,
@@ -116,7 +142,7 @@ export default function Home() {
                 theme="light"
             />
 
-            <div className="container sm:mx-auto flex flex-col justify-center sm:w-2/3 gap-7">
+            <div className="container sm:mx-auto flex flex-col justify-center sm:w-2/3 gap-7 mb-11">
                 <div className='text-center'>
                     <h1 className='text-3xl font-bold text-blue-600 mt-7'>PassOp</h1>
                     <p>Your Own Password Manager</p>
